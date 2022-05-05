@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Mi Barrio El Alto </title>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Load Leaflet: http://leafletjs.com/ -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js" integrity="sha512-lInM/apFSqyy1o6s89K4iQUKg6ppXEgsVxT35HbzUupEVRh2Eu9Wdl4tHj7dZO0s1uvplcYGmt3498TtHq+log==" crossorigin=""></script>
+
+    <!-- Esri Leaflet Plugin: https://esri.github.io/esri-leaflet/ -->
+    <script src="https://unpkg.com/esri-leaflet@2.1.3/dist/esri-leaflet.js" integrity="sha512-pijLQd2FbV/7+Jwa86Mk3ACxnasfIMzJRrIlVQsuPKPCfUBCDMDUoLiBQRg7dAQY6D1rkmCcR8286hVTn/wlIg==" crossorigin=""></script>
+
+    <!-- ESRI Renderer Plugin: https://github.com/Esri/esri-leaflet-renderers -->
+    <!-- Renders feature layer using default symbology as defined by ArcGIS REST service -->
+    <!-- Currently doesn't work with ESRI cluster plugin -->
+    <script src="https://unpkg.com/esri-leaflet-renderers@2.0.6/dist/esri-leaflet-renderers.js" integrity="sha512-mhpdD3igvv7A/84hueuHzV0NIKFHmp2IvWnY5tIdtAHkHF36yySdstEVI11JZCmSY4TCvOkgEoW+zcV/rUfo0A==" crossorigin=""></script>
+
+    <!-- Plugin Mouse Position -->
+    <link rel="stylesheet" href = "CSS/L.Control.MousePosition.css"/>
+    <script type="text/javascript" src ="JS/L.Control.MousePosition.js" type="text/javascript"></script>
+
+    <!-- Load Leaflet Basemap Providers: https://github.com/leaflet-extras/leaflet-providers -->
+    <!-- Modified to include USGS TNM web services -->
+    <script src="JS/leaflet-providers.js"></script>
+
+    <!-- 2.5D OSM Buildings Classic: https://github.com/kekscom/osmbuildings -->
+    <script src="https://cdn.osmbuildings.org/OSMBuildings-Leaflet.js"></script>
+
+    <!-- Load Font Awesome icons -->
+    <script src="https://use.fontawesome.com/a64989e3a8.js"></script>
+
+    <!-- Grouped Layer Plugin: https://github.com/ismyrnow/leaflet-groupedlayercontrol  -->
+    <link rel="stylesheet" href="CSS/leaflet.groupedlayercontrol.min.css">
+    <script src="JS/leaflet.groupedlayercontrol.min.js" type="text/javascript"></script>
+
+    <!-- Overview mini map Plugin: https://github.com/Norkart/Leaflet-MiniMap -->
+    <link rel="stylesheet" href="CSS/Control.MiniMap.css">
+    <script src="JS/Control.MiniMap.min.js" type="text/javascript"></script>
+
+    <!-- Leaflet Drawing Plugin: https://github.com/codeofsumit/leaflet.pm -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.pm@latest/dist/leaflet.pm.css">
+    <script src="https://unpkg.com/leaflet.pm@latest/dist/leaflet.pm.min.js"></script>
+
+    <!-- Leaflet WMS Plugin: https://github.com/heigeo/leaflet.wms -->
+    <script src="JS/leaflet.wms.js"></script>
+
+    <!-- Logo Credit Plugin: https://github.com/gregallensworth/L.Control.Credits -->
+    <link rel="stylesheet" href="CSS/leaflet-control-credits.css" />
+    <script type="text/javascript" src="JS/leaflet-control-credits.js"></script>
+
+    <script src="JS/L.Control.Locate.min.js"></script>
+   
+ 
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+
+        html,
+        body,
+        #map {
+            height: 100%;
+        }
+
+        header{background-color: #E9967A;
+            height: 50px;
+           
+        } 
+        
+     
+    </style>
+
+</head>
+
+<body>
+
+    <header>
+        <img src="Images/logo_small.png"  height='50' />  />
+        
+    </header>
+
+    <div id="map"></div>
+    
+    
+
+    <script>
+        var map = L.map('map', {
+            center: [19.046149, -98.185279], // Mex
+            //minZoom: 0
+            zoomControl:true, maxZoom:18, minZoom:16
+            //zoom: 18
+             
+            
+            
+        }).fitBounds([[19.04066,-98.19885],[19.05384,-98.17557]]);
+        
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+
+        var defaultBase = L.tileLayer.provider('Stamen.TonerLite').addTo(map);
+        //Stamen.TonerLite
+        var baseLayers = {
+            //'OpenStreetMap Default': defaultBase,
+            'Stamen.TonerLite': defaultBase,
+            'OpenStreetMap ': L.tileLayer.provider('OpenStreetMap.DE'),
+            'ESRI Imagery': L.tileLayer.provider('Esri.WorldImagery'),
+            'OSM Topo': L.tileLayer.provider('OpenTopoMap')
+          
+			
+        };
+
+        //ESRI ArcGIS layers from Hawaii GIS Program; dynamic layer example
+        //Using a relative url to call layer instead of http
+        var WaterQualSites = L.esri.dynamicMapLayer({
+            url: '//geodata.hawaii.gov/arcgis/rest/services/HumanHealthSafety/MapServer',
+            layers: [2],
+            useCors: false
+        });
+
+        //add popup to Water quality sites dynamic map layer
+        WaterQualSites.bindPopup(function(error, featureCollection) {
+            if (error || featureCollection.features.length === 0) {
+                return false;
+            } else {
+                return 'Name: ' + featureCollection.features[0].properties.name + '<br>' + 'ID: ' + featureCollection.features[0].properties.identifier;
+            }
+        });
+
+        //ESRI ArcGIS layers from Hawaii GIS Program; polygon feature layer example
+        //Using a relative url to call layer instead of http
+        var AgBaseline = L.esri.featureLayer({
+            url: '//geodata.hawaii.gov/arcgis/rest/services/LandUseLandCover/MapServer/4',
+            style: function(feature) {
+                return {
+                    fillOpacity: 0.5
+                }
+            }
+        });
+
+        //add popup to AgBaseline feature layer
+        AgBaseline.bindPopup(function(evt) {
+            return L.Util.template('<p>{cropcatego}<br>{island}</p>', evt.feature.properties);
+        });
+
+        //ESRI ArcGIS layers from Hawaii GIS Program; line feature layer example; can override the styling
+        //Using a relative url to call layer
+        var Trails = L.esri.featureLayer({
+            url: '//geodata.hawaii.gov/arcgis/rest/services/Terrestrial/MapServer/34',
+            style: function(feature) {
+                return {
+                    color: '#328000',
+                    weight: 2
+                }
+            }
+        });
+
+        //PacIOOS GeoServer Example; adding a single layer with properties
+        //Using a relative url to call layer instead of http
+        var EconSeaLevRise = L.tileLayer.wms('http://geo.pacioos.hawaii.edu/geoserver/wms?', {
+            layers: 'PACIOOS:hi_tt_all_slrxa_econ_2030',
+            format: 'image/png',
+            opacity: 0.5,
+            tiled: 'true'
+        });
+
+        //Another example using PacIOOS GeoServer examples; setting properties first then add layers     
+        var options = {
+            transparent: 'true',
+            format: 'image/png',
+            opacity: 0.5,
+            tiled: 'true'
+            //info_format: 'text/html'
+        };
+
+        //Using a relative url to call layer instead of http
+        var source = L.WMS.source('http://geo.pacioos.hawaii.edu/geoserver/wms?', options);
+        var CREDREASites = source.getLayer('PACIOOS:hi_cred_all_rea_sites');
+        var VegShoreline = source.getLayer('PACIOOS:hi_hcgg_all_shore_veg');
+
+        //Load OSM Buildings then disable it on first load; can only be viewed at certain scales
+        var osmb = new OSMBuildings(map).load();
+        map.removeLayer(osmb);
+        
+        var myGEOJSON = {"type": "FeatureCollection","name": "El_Alto","crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },"features": [{ "type": "Feature", "properties": { "Ãrea": 144816.69253599999, "PerÃ­metro": 2010.93178745, "Id": 6, "Nombre": "BARRIO DEL ALTO" }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -98.192306049600006, 19.042695158 ], [ -98.191803951, 19.0425375443 ], [ -98.191427392099996, 19.042416344500001 ], [ -98.191000317199993, 19.042342743100001 ], [ -98.190698665400006, 19.0423294661 ], [ -98.190258150299996, 19.042435131 ], [ -98.189880607, 19.042517160900001 ], [ -98.189541125199995, 19.0425276263 ], [ -98.189227134199996, 19.042466472299999 ], [ -98.188621290236711, 19.042377412437077 ], [ -98.187980450811153, 19.042466643243166 ], [ -98.187274370699996, 19.042808571199998 ], [ -98.186017517600007, 19.043778572400001 ], [ -98.185613485700003, 19.0441354443 ], [ -98.185592298700001, 19.044355325 ], [ -98.185164918599995, 19.044343875199999 ], [ -98.184807518, 19.044418810300002 ], [ -98.184508651499996, 19.045121646599998 ], [ -98.184089938499994, 19.045908834 ], [ -98.182545483531129, 19.048656016429227 ], [ -98.183979260347144, 19.049323219502043 ], [ -98.184587652206844, 19.049590911920312 ], [ -98.185269051089719, 19.049120422215474 ], [ -98.185569916194012, 19.049399560932841 ], [ -98.18640674386738, 19.050026926086435 ], [ -98.187242268688038, 19.049377974769413 ], [ -98.187826324873356, 19.049053499110904 ], [ -98.18958660532077, 19.050562310922974 ], [ -98.18909989183301, 19.049337415312102 ], [ -98.189116115615931, 19.048534338057291 ], [ -98.189375696142747, 19.047820491608569 ], [ -98.189456815057369, 19.047114757051311 ], [ -98.189440591274447, 19.046806505175724 ], [ -98.189537933972005, 19.045995316029451 ], [ -98.190024647459765, 19.045622169022163 ], [ -98.190628416799996, 19.045410393 ], [ -98.191301105700006, 19.045130004200001 ], [ -98.191569884800003, 19.044923162100002 ], [ -98.191722252600002, 19.0446118003 ], [ -98.192093633799999, 19.043465733200001 ], [ -98.192306049600006, 19.042695158 ] ] ] } }]}
+
+        //var myGEOJSON = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"stroke":"#b01717","stroke-width":2,"stroke-opacity":0.9,"fill":"#ffffff","fill-opacity":0.1,"OBJECTID":1,"NOMBRE":"ZONA DE MONUMENTOS","AREA":6981783.593,"PERIMETER":16774.207,"HECTARES":698.178,"SIMBOLOGIA":"ZM","Shape_Leng":16774.2069867,"Shape_Area":6981783.652449999},"geometry":{"type":"MultiPolygon","coordinates":[[[[-98.21516,19.04206],[-98.21342,19.04119],[-98.21098,19.04],[-98.20926,19.04303],[-98.20331,19.03994],[-98.20423,19.0384],[-98.20108,19.03681],[-98.20021,19.03834],[-98.19877,19.03761],[-98.19744,19.0399],[-98.19509,19.0387],[-98.19552,19.03792],[-98.19088,19.03557],[-98.18915,19.03875],[-98.1876,19.03797],[-98.18724,19.0386],[-98.18477,19.03735],[-98.18459,19.03763],[-98.18255,19.0432],[-98.184,19.04341],[-98.18499,19.04392],[-98.18411,19.04588],[-98.18321,19.04581],[-98.18225,19.0462],[-98.18165,19.04533],[-98.17947,19.04581],[-98.17924,19.04646],[-98.17817,19.04622],[-98.17795,19.04664],[-98.18254,19.04873],[-98.18176,19.0502],[-98.18135,19.05003],[-98.18058,19.05052],[-98.18035,19.05134],[-98.17971,19.05127],[-98.17965,19.05106],[-98.17891,19.05147],[-98.17902,19.05168],[-98.17864,19.05181],[-98.17845,19.05153],[-98.1782,19.05187],[-98.17801,19.0522],[-98.17808,19.05239],[-98.1772,19.05377],[-98.17774,19.05397],[-98.17703,19.05581],[-98.17739,19.0564],[-98.17969,19.06008],[-98.18123,19.05919],[-98.18258,19.06143],[-98.1811,19.06318],[-98.18132,19.06362],[-98.18184,19.0634],[-98.18175,19.06316],[-98.18363,19.06345],[-98.1836,19.06365],[-98.18522,19.06386],[-98.18634,19.06004],[-98.18735,19.06059],[-98.18803,19.05936],[-98.18997,19.05543],[-98.19174,19.05285],[-98.19274,19.05389],[-98.19294,19.05431],[-98.1931,19.055],[-98.19299,19.05616],[-98.19351,19.0564],[-98.1943,19.05502],[-98.19557,19.05619],[-98.1951,19.05705],[-98.19689,19.05831],[-98.19773,19.05772],[-98.20089,19.06013],[-98.20351,19.05585],[-98.20511,19.05663],[-98.20634,19.05443],[-98.20772,19.05513],[-98.20943,19.05213],[-98.21105,19.05295],[-98.21459,19.04666],[-98.21301,19.04586],[-98.21516,19.04206]]]]}}]}
+        
+        function getAreaColor(){
+       switch (feature.properties.Name){
+       case 'ZONA DE MONUMENTOS' : return { fillColor: 'blue' };
+     
+      break;
+     }
+     };
+
+       function areaStyle(){
+         return {
+       fillColor: getAreaColor,
+       weight: 3,
+       opacity: 1,
+       color: 'purple',
+       dashArray: '1',
+       fillOpacity: 0
+       }
+       };
+        L.geoJSON(myGEOJSON, {style: areaStyle}).addTo(map)
+
+        //Overlay grouped layers    
+        var groupOverLays = {
+           // "Hawaii State GIS": {
+            //    "Water Quality Monitoring Sites": WaterQualSites,
+            //    "Na Ala Hele Trails": Trails,
+            //    "Agricultural Baseline": AgBaseline
+           // },
+
+
+            "PacIOOS Layers": {
+                "Economic Loss from Sea Level Rise (0.5ft) ": EconSeaLevRise,
+                "CRED REA Sites": CREDREASites,
+                "Vegetation Shoreline": VegShoreline
+            },
+
+            "OSM Bldg Classic": {
+                "2.5D Buildings": osmb
+            }
+        };
+
+        //add layer switch control
+        L.control.groupedLayers(baseLayers, groupOverLays).addTo(map);
+
+
+        //add scale bar to map
+        L.control.scale({
+            position: 'bottomleft'
+        }).addTo(map);
+
+        // Overview mini map
+        var Esri_WorldTopoMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+       
+        });
+           
+        var miniMap = new L.Control.MiniMap(Esri_WorldTopoMap, {
+            toggleDisplay: true,
+            minimized: false,
+            position: 'bottomleft'
+            
+
+        }).addTo(map);
+
+        
+
+        //Logo position: bottomright
+        var credctrl = L.controlCredits({
+            image: "Images/logo.png",
+            link: "https://leafletjs.com",
+            text: "Leaflet map example by ernesto @ <u> ernesto.sanchez.castro@gmail.com <u/>"
+        }).addTo(map);
+
+       
+        L.control.mousePosition().addTo(map);
+
+  
+
+
+
+
+        // Markers Puebla Photos
+      
+       var marker = L.marker([19.044934,-98.190028],
+       {
+           draggable: false,
+            title: "La Iglesia de San Aparicio",
+        })
+        .addTo(map)
+        .bindPopup("<h1> La Iglesia de San Aparicio </h1> <p> En 1999 a las 15:42 hrs ocurrió un sismo en Puebla. Dejando 20 víctimas mortales e inumerables daños en inmuebles históricos de la ciudad.  </p> <img src= 'Images/temblor.jpg' alt='HTML5 Icon'  align='center' style='width:253px;height:340px;' />" );
+        
+        var marker1 = L.marker([19.044894,-98.188648],
+        {
+          draggable: false,
+            title: "ExConvento de San Francisco",
+       })
+        .addTo(map)
+        .bindPopup("<h1> Cementerio de San Francisco </h1> <p> a espaldas del convento, en lo que fue conocido como el jardin de las trinitarias (1848-1880) Foto: Puebla Antigua bajo licencia de Creative Commonns Al fondo  </p> <img src= 'Images/foto.jpeg' align='center' style='width:256px;height:159px;' />" );
+
+        var marker2 = L.marker([19.045905,-98.188078],
+        {
+          draggable: false,
+            title: "Parroquia de Santa Cruz",
+       })
+        .addTo(map)
+        .bindPopup("<h1> Parroquia de Santa Cruz </h1> <p> Fray Toribio de Benavente ofició la misa de la fundación de Puebla en los terrenos de la parroquia de la Santa Cruz, en 1531 | Foto: Archivo El Sol de Puebla   </p> <img src= 'Images/Santacruz.jpg' align='center' style='width:240px;height:204px;' />" );
+
+        var marker3 = L.marker([19.045887,-98.187503],
+        {
+          draggable: false,
+            title: "Niños Jugando",
+       })
+        .addTo(map)
+        .bindPopup("<h1> Niños Jugando </h1> <p> De esas estampas en el tiempo que, de tan lejanas y distantes; duelen... Niños divirtiéndose sanamente en las calles jugando a la ronda de San Miguel y un barrio popular como El Alto en Puebla | Foto: La Voz, abril 1972.</p> <img src= 'Images/analco2.jpg' align='center' style='width:240px;height:244px;' />" );
+
+        var marker4 = L.marker([19.045026,-98.188320],
+        {
+          draggable: false,
+            title: "Fuente de San Juan de Dios",
+       })
+        .addTo(map)
+        .bindPopup("<h1> Fuente de San Juan de Dios </h1> <p> Ubicación original de la Fuente de San Juan de Dios | Foto: cortesía </p> <img src= 'Images/fuente.jpg' align='center' style='width:270px;height:169px;' />" );
+
+        var marker5 = L.marker([19.044934,-98.187982],
+        {
+          draggable: false,
+            title: "Portalito del Alto",
+       })
+        .addTo(map)
+        .bindPopup("<h1> Portalito del Alto</h1> <p> Parte del Portalillo de El Alto en los años sesenta del siglo XX / Foto: Archivo El Sol de Puebla </p> <img src= 'Images/Portalito.jpg' align='center' style='width:240px;height:186px;' />" );
+
+        var marker6 = L.marker([19.045740,-98.189196],
+        {
+          draggable: false,
+            title: "Los lavaderos de Almoloya ",
+       })
+        .addTo(map)
+        .bindPopup("<h1> Los lavaderos de Almoloya </h1> <p> Los lavaderos de Almoloya foto tomada el 10 de mayo de 1889 de la colección P.S. Du Pont de la Hagley Library. </p> <img src= 'Images/lavaderos.jpg' align='center' style='width:316px;height:199px;' />" );
+
+
+
+    </script>
+
+</body>
+
+</html>
